@@ -1,0 +1,6 @@
+[
+  { "name": "1-cover.png", "query": "?shot=cover" },
+  { "name": "2-title.png", "query": "?shot=title" },
+  { "name": "3-night-garden.png", "query": "?shot=garden" },
+  { "name": "4-level-cleared.png", "query": "?shot=complete" }
+]

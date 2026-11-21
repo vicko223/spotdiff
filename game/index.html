@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Double Take — Spot the Difference</title>
+<style>
+  :root {
+    --ink: #16222e;
+    --ink-2: #1f3040;
+    --cream: #fdf6e3;
+    --paper: #f7efdb;
+    --coral: #ff6b5e;
+    --gold: #ffb84d;
+    --green: #2fbf71;
+    --muted: #9db3c4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(1200px 700px at 50% -10%, #2a4258 0%, var(--ink) 60%);
+    color: var(--cream);
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 14px 16px 20px;
+  }
+  h1, h2, .serif { font-family: Georgia, "Times New Roman", serif; }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: 2px solid #00000033;
+    border-radius: 10px;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 8px 16px;
+    font-weight: 600;
+    transition: transform 0.08s ease, filter 0.12s ease;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button.primary { background: var(--coral); color: #fff; }
+  button.gold { background: var(--gold); }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    width: 100%;
+    max-width: 1240px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #ffffff14;
+    border: 1px solid #ffffff22;
+    border-radius: 14px;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+  }
+  #hud .brand { font-family: Georgia, serif; font-size: 20px; font-weight: 700; letter-spacing: 0.4px; white-space: nowrap; }
+  #hud .brand span { color: var(--gold); }
+  #level-title { font-weight: 700; white-space: nowrap; }
+  #found-text { color: var(--muted); white-space: nowrap; }
+  #counter {
+    background: var(--coral);
+    color: #fff;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 3px 14px;
+    white-space: nowrap;
+  }
+  #score-text { font-weight: 700; white-space: nowrap; }
+  .time-wrap { flex: 1; min-width: 120px; }
+  #time-text { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 19px; }
+  #time-text.penalty { animation: penalty 0.5s ease; }
+  @keyframes penalty { 0% { color: var(--coral); transform: scale(1.25); } 100% { color: inherit; transform: scale(1); } }
+  .time-track { height: 8px; background: #ffffff22; border-radius: 99px; overflow: hidden; margin-top: 3px; }
+  #time-bar { height: 100%; width: 100%; background: linear-gradient(90deg, var(--green), #7fe0a8); border-radius: 99px; transition: width 0.15s linear; }
+  #time-bar.low { background: linear-gradient(90deg, #ff4d4d, var(--coral)); }
+  #hud .spacer { flex: 0 0 auto; display: flex; gap: 8px; }
+  #hud button { padding: 6px 12px; font-size: 14px; }
+
+  /* ---------- panels ---------- */
+  #screen-game { width: 100%; max-width: 1240px; position: relative; }
+  #panels { display: flex; gap: 16px; justify-content: center; }
+  #panels.shake { animation: shake 0.32s ease; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+  }
+  .panel {
+    position: relative;
+    flex: 1 1 0;
+    max-width: 604px;
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 10px 30px #00000055;
+    cursor: crosshair;
+  }
+  .panel-art, .panel-overlay { position: relative; }
+  .panel-art svg, .panel-overlay svg { display: block; width: 100%; height: auto; border-radius: 8px; }
+  .panel-overlay { position: absolute; inset: 8px; pointer-events: none; }
+  .panel-label {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: #16222ecc;
+    color: var(--cream);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .marker-pop { transform-box: view-box; animation: pop 0.38s cubic-bezier(0.2, 1.6, 0.4, 1); }
+  @keyframes pop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .wrong-fade { animation: fadeout 0.65s ease forwards; }
+  .sparkle-fade { animation: fadeout 0.9s ease forwards; }
+  @keyframes fadeout { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+  .hint-pulse { transform-box: view-box; animation: pulse 0.85s ease-in-out 3; }
+  @keyframes pulse { 0%, 100% { transform: scale(0.92); opacity: 0.65; } 50% { transform: scale(1.08); opacity: 1; } }
+
+  #under-panels { display: flex; align-items: center; gap: 16px; margin-top: 12px; min-height: 34px; }
+  #dots { display: flex; gap: 7px; }
+  #dots .dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #ffffff55; background: transparent; transition: background 0.2s ease, transform 0.2s ease; }
+  #dots .dot.on { background: var(--green); border-color: var(--green); transform: scale(1.15); }
+  #toast { font-weight: 700; color: var(--gold); opacity: 0; }
+  #toast.show { animation: toast-in 2.6s ease forwards; }
+  @keyframes toast-in { 0% { opacity: 0; transform: translateY(4px); } 10% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+  .keys-hint { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+  /* ---------- title ---------- */
+  #screen-title { width: 100%; max-width: 1080px; text-align: center; padding-top: 26px; }
+  #screen-title h1 { font-size: 58px; letter-spacing: 1px; }
+  #screen-title h1 span { color: var(--gold); }
+  #screen-title .tagline { color: var(--muted); font-size: 18px; margin: 8px 0 26px; }
+  #level-cards { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .level-card {
+    width: 320px;
+    text-align: left;
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    box-shadow: 0 8px 24px #00000044;
+  }
+  .level-card .level-num { font-size: 12px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: var(--coral); }
+  .level-card .level-name { font-family: Georgia, serif; font-size: 25px; font-weight: 700; }
+  .level-card .level-meta { font-size: 13.5px; font-weight: 700; color: #5b6b7a; }
+  .level-card .level-blurb { font-size: 14px; color: #43536a; line-height: 1.45; }
+  .level-card .level-best { font-size: 13px; font-weight: 700; color: #8a6d1f; margin-top: 4px; }
+  .level-card.locked { filter: grayscale(0.5); }
+  .howto { max-width: 720px; margin: 28px auto 0; color: var(--muted); line-height: 1.6; font-size: 15px; }
+  .howto b { color: var(--cream); }
+
+  /* ---------- overlays ---------- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: #101a24b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    z-index: 5;
+  }
+  .overlay[hidden] { display: none; }
+  .card {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 18px;
+    padding: 30px 38px;
+    text-align: center;
+    max-width: 480px;
+    box-shadow: 0 18px 50px #00000088;
+  }
+  .card h2 { font-size: 32px; margin-bottom: 8px; }
+  .card p { line-height: 1.55; color: #43536a; margin-bottom: 16px; }
+  .card .stars { font-size: 40px; color: var(--gold); letter-spacing: 6px; margin-bottom: 6px; text-shadow: 0 2px 0 #00000022; }
+  .card .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .card .big-score { font-size: 22px; font-weight: 800; color: var(--ink); }
+
+  @media (max-width: 760px) {
+    #panels { flex-direction: column; align-items: center; }
+    #hud { flex-wrap: wrap; }
+    #screen-title h1 { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<header id="hud" hidden>
+  <div class="brand">Double <span>Take</span></div>
+  <div id="level-title">Level 1</div>
+  <div id="found-text">Found 0 of 8</div>
+  <div id="counter">8 to go</div>
+  <div class="time-wrap">
+    <div id="time-text">2:30</div>
+    <div class="time-track"><div id="time-bar"></div></div>
+  </div>
+  <div id="score-text">Score 0</div>
+  <div class="spacer">
+    <button id="btn-hint" class="gold">Hint (3)</button>
+    <button id="btn-pause">Pause</button>
+    <button id="btn-mute">Sound: on</button>
+  </div>
+</header>
+
+<section id="screen-title">
+  <h1>Double <span>Take</span></h1>
+  <p class="tagline">Two pictures. A handful of sneaky changes. Find them all before the clock runs out.</p>
+  <div id="level-cards"></div>
+  <p class="howto">
+    <b>How to play:</b> click a difference on either picture to mark it on both.
+    A wrong click costs <b>5 seconds</b> and points. Stuck? Spend a <b>hint</b> (key H).
+    Pause with <b>P</b>, mute with <b>M</b>, pick a level with <b>1–3</b>.
+    Clear all three scenes to win the game.
+  </p>
+</section>
+
+<section id="screen-game" hidden>
+  <div id="panels">
+    <div class="panel">
+      <div class="panel-art" id="panel-left"></div>
+      <div class="panel-overlay" id="overlay-left"></div>
+      <span class="panel-label">Original</span>
+    </div>
+    <div class="panel">
+      <div class="panel-art" id="panel-right"></div>
+      <div class="panel-overlay" id="overlay-right"></div>
+      <span class="panel-label">Spot the changes</span>
+    </div>
+  </div>
+  <div id="under-panels">
+    <div id="dots"></div>
+    <div id="toast"></div>
+    <div class="keys-hint">H hint · P pause · M mute</div>
+  </div>
+
+  <div class="overlay" id="overlay-pause" hidden>
+    <div class="card">
+      <h2>Paused</h2>
+      <p>The clock is stopped. The differences are not going anywhere.</p>
+      <div class="row">
+        <button id="btn-resume" class="primary">Resume</button>
+        <button class="btn-menu">Level select</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-complete" hidden>
+    <div class="card">
+      <h2>Level cleared!</h2>
+      <div class="stars" id="complete-stars">★★★</div>
+      <p id="complete-stats"></p>
+      <div class="row">
+        <button id="btn-next" class="primary">Next level</button>
+        <button id="btn-replay">Replay</button>
+        <button class="btn-menu">Level select</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-failed" hidden>
+    <div class="card">
+      <h2>Out of time!</h2>
+      <p id="failed-stats"></p>
+      <div class="row">
+        <button id="btn-retry" class="primary">Try again</button>
+        <button class="btn-menu">Level select</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay-campaign" hidden>
+    <div class="card">
+      <h2>You win!</h2>
+      <div class="stars">★★★</div>
+      <p>Every difference in every scene, found. Sharp eyes!</p>
+      <p class="big-score" id="campaign-score">Total score 0</p>
+      <div class="row">
+        <button id="btn-again" class="primary">Play again</button>
+        <button class="btn-menu">Level select</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
